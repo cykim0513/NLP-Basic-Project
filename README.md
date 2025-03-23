@@ -5,8 +5,7 @@
 ![Hugging Face](https://img.shields.io/badge/huggingface-ffcc00?style=for-the-badge&logo=huggingface&logoColor=black) 
 ![Pandas](https://img.shields.io/badge/Pandas-150458?style=for-the-badge&logo=pandas&logoColor=white) 
 
-**의미 유사도 판별(Semantic Text Similarity, STS)** 이란  
-**두 문장이 의미적으로 얼마나 유사한지를 수치화하는 자연어처리 태스크** 입니다.
+**의미 유사도 판별(Semantic Text Similarity, STS)** 이란 **두 문장이 의미적으로 얼마나 유사한지를 수치화하는 자연어처리 태스크** 입니다.
 
 ## 📌 Description
 보고서나 논문 등의 정보 전달 목적의 글을 쓰다보면, 같은 말을 반복해서 쓰게 되는 경우가 많습니다. 중복된 문장들은 가독성을 떨어뜨리는 요인 중 하나로써, 글의 퀄리티가 낮아지게 만들죠. 이런 경우 인간은 교정 작업을 하며, 의미적으로 중복된 문장을 인지하고 수정하게 됩니다. 그렇다면 기계의 경우 서로 구조적으론 다르지만, 의미가 유사한 것을 어떻게 구별할 수 있을까요?  
