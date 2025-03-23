@@ -14,7 +14,7 @@ import optuna
 import os
 
 # 병렬 토크나이저 경고 비활성화
-os.environ['TOKENIZERS_PARALLELISM'] = 'false'
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 # seed 고정
 torch.manual_seed(0)
@@ -25,9 +25,9 @@ random.seed(0)
 
 def objective(trial, args):
     """Optuna를 활용한 하이퍼파라미터 최적화"""
-    batch_size = trial.suggest_categorical('batch_size', [8, 16])
-    learning_rate = trial.suggest_float('learning_rate', 1e-6, 1e-4, log=True)
-    max_epoch = trial.suggest_int('max_epoch', 1, 30)
+    batch_size = trial.suggest_categorical("batch_size", [8, 16])
+    learning_rate = trial.suggest_float("learning_rate", 1e-6, 1e-4, log=True)
+    max_epoch = trial.suggest_int("max_epoch", 1, 30)
 
     # 데이터로더 및 모델 생성
     dataloader = Dataloader(
@@ -43,7 +43,7 @@ def objective(trial, args):
     model = Model(args.model_name, lr=learning_rate)
 
     trainer = pl.Trainer(
-        accelerator='gpu', devices=1,
+        accelerator="gpu", devices=1,
         max_epochs=max_epoch,
         log_every_n_steps=1,
         logger=False,
@@ -52,7 +52,7 @@ def objective(trial, args):
 
     trainer.fit(model=model, datamodule=dataloader)
     val_metrics = trainer.validate(model=model, datamodule=dataloader, verbose=False)
-    val_loss = val_metrics[0]['val_loss']
+    val_loss = val_metrics[0]["val_loss"]
     return val_loss
 
 
@@ -93,18 +93,18 @@ class Dataloader(pl.LightningDataModule):
         self.predict_dataset = None
 
         self.tokenizer = transformers.AutoTokenizer.from_pretrained(model_name, max_length=160)
-        self.target_columns = ['label']
-        self.delete_columns = ['id']
-        self.text_columns = ['sentence_1', 'sentence_2']
+        self.target_columns = ["label"]
+        self.delete_columns = ["id"]
+        self.text_columns = ["sentence_1", "sentence_2"]
 
     def tokenizing(self, dataframe):
         """토크나이징을 수행하는 메서드"""
         data = []
-        for idx, item in tqdm(dataframe.iterrows(), desc='tokenizing', total=len(dataframe)):
+        for idx, item in tqdm(dataframe.iterrows(), desc="tokenizing", total=len(dataframe)):
             # 두 입력 문장을 [SEP] 토큰으로 이어붙여서 전처리합니다.
-            text = '[SEP]'.join([item[text_column] for text_column in self.text_columns])
-            outputs = self.tokenizer(text, add_special_tokens=True, padding='max_length', truncation=True)
-            data.append(outputs['input_ids'])
+            text = "[SEP]".join([item[text_column] for text_column in self.text_columns])
+            outputs = self.tokenizer(text, add_special_tokens=True, padding="max_length", truncation=True)
+            data.append(outputs["input_ids"])
         return data
 
     def preprocessing(self, data):
@@ -122,8 +122,8 @@ class Dataloader(pl.LightningDataModule):
 
         return inputs, targets
 
-    def setup(self, stage='fit'):
-        if stage == 'fit':
+    def setup(self, stage="fit"):
+        if stage == "fit":
             # 학습 데이터와 검증 데이터셋을 호출합니다
             train_data = pd.read_csv(self.train_path)
             val_data = pd.read_csv(self.dev_path)
@@ -175,7 +175,7 @@ class Model(pl.LightningModule):
         self.loss_func = torch.nn.L1Loss()
 
     def forward(self, x):
-        x = self.plm(x)['logits']
+        x = self.plm(x)["logits"]
 
         return x
 
@@ -183,7 +183,7 @@ class Model(pl.LightningModule):
         x, y = batch
         logits = self(x)
         loss = self.loss_func(logits, y.float())
-        self.log('train_loss', loss)
+        self.log("train_loss", loss)
 
         return loss
 
@@ -191,9 +191,9 @@ class Model(pl.LightningModule):
         x, y = batch
         logits = self(x)
         loss = self.loss_func(logits, y.float())
-        self.log('val_loss', loss)
+        self.log("val_loss", loss)
 
-        self.log('val_pearson', torchmetrics.functional.pearson_corrcoef(logits.squeeze(), y.squeeze()))
+        self.log("val_pearson", torchmetrics.functional.pearson_corrcoef(logits.squeeze(), y.squeeze()))
 
         return loss
 
@@ -201,7 +201,7 @@ class Model(pl.LightningModule):
         x, y = batch
         logits = self(x)
 
-        self.log('test_pearson', torchmetrics.functional.pearson_corrcoef(logits.squeeze(), y.squeeze()))
+        self.log("test_pearson", torchmetrics.functional.pearson_corrcoef(logits.squeeze(), y.squeeze()))
 
     def predict_step(self, batch, batch_idx):
         x = batch
@@ -214,32 +214,32 @@ class Model(pl.LightningModule):
         return optimizer
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # 하이퍼 파라미터 등 각종 설정값을 입력받습니다
     # 터미널 실행 예시 : python3 run.py --batch_size=64 ...
     # 실행 시 '--batch_size=64' 같은 인자를 입력하지 않으면 default 값이 기본으로 실행됩니다
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_name', default='klue/roberta-large', type=str)
-    parser.add_argument('--batch_size', default=16, type=int)
-    parser.add_argument('--max_epoch', default=1, type=int)
-    parser.add_argument('--shuffle', default=True)
-    parser.add_argument('--learning_rate', default=1e-5, type=float)
-    parser.add_argument('--train_path', default='../data/augmented_train.csv')
-    parser.add_argument('--dev_path', default='../data/dev.csv')
-    parser.add_argument('--test_path', default='../data/dev.csv')
-    parser.add_argument('--predict_path', default='../data/test.csv')
-    parser.add_argument('--num_workers', default=1, type=int)
+    parser.add_argument("--model_name", default="klue/roberta-large", type=str)
+    parser.add_argument("--batch_size", default=16, type=int)
+    parser.add_argument("--max_epoch", default=1, type=int)
+    parser.add_argument("--shuffle", default=True)
+    parser.add_argument("--learning_rate", default=1e-5, type=float)
+    parser.add_argument("--train_path", default="../data/augmented_train.csv")
+    parser.add_argument("--dev_path", default="../data/dev.csv")
+    parser.add_argument("--test_path", default="../data/dev.csv")
+    parser.add_argument("--predict_path", default='../data/test.csv')
+    parser.add_argument("--num_workers", default=1, type=int)
     args = parser.parse_args()
 
     # Optuna를 사용하여 하이퍼파라미터 최적화 수행
-    study = optuna.create_study(direction='minimize')
+    study = optuna.create_study(direction="minimize")
     study.optimize(lambda trial: objective(trial, args), n_trials=50)
 
     # 최적의 하이퍼파라미터 적용
     best_params = study.best_params
-    batch_size = best_params['batch_size'] 
-    max_epoch = best_params['max_epoch'] 
-    learning_rate = best_params['learning_rate'] 
+    batch_size = best_params["batch_size"] 
+    max_epoch = best_params["max_epoch"] 
+    learning_rate = best_params["learning_rate"] 
 
     # dataloader와 model을 생성합니다.
     dataloader = Dataloader(args.model_name, batch_size, args.shuffle, args.train_path, args.dev_path,
@@ -247,11 +247,11 @@ if __name__ == '__main__':
     model = Model(args.model_name, learning_rate)
 
     # gpu가 없으면 accelerator="cpu"로 변경해주세요, gpu가 여러개면 'devices=4'처럼 사용하실 gpu의 개수를 입력해주세요
-    trainer = pl.Trainer(accelerator='gpu', devices=1, max_epochs=max_epoch, log_every_n_steps=1)
+    trainer = pl.Trainer(accelerator="gpu", devices=1, max_epochs=max_epoch, log_every_n_steps=1)
 
     # Train part
     trainer.fit(model=model, datamodule=dataloader)
     trainer.test(model=model, datamodule=dataloader)
 
     # 학습이 완료된 모델을 저장합니다.
-    torch.save(model, 'model.pt')
+    torch.save(model, "model.pt")

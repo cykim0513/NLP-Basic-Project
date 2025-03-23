@@ -47,17 +47,17 @@ class Dataloader(pl.LightningDataModule):
         self.predict_dataset = None
 
         self.tokenizer = transformers.AutoTokenizer.from_pretrained(model_name, max_length=160)
-        self.target_columns = ['label']
-        self.delete_columns = ['id']
-        self.text_columns = ['sentence_1', 'sentence_2']
+        self.target_columns = ["label"]
+        self.delete_columns = ["id"]
+        self.text_columns = ["sentence_1", "sentence_2"]
 
     def tokenizing(self, dataframe):
         data = []
-        for idx, item in tqdm(dataframe.iterrows(), desc='tokenizing', total=len(dataframe)):
+        for idx, item in tqdm(dataframe.iterrows(), desc="tokenizing", total=len(dataframe)):
             # 두 입력 문장을 [SEP] 토큰으로 이어붙여서 전처리합니다.
-            text = '[SEP]'.join([item[text_column] for text_column in self.text_columns])
-            outputs = self.tokenizer(text, add_special_tokens=True, padding='max_length', truncation=True)
-            data.append(outputs['input_ids'])
+            text = "[SEP]".join([item[text_column] for text_column in self.text_columns])
+            outputs = self.tokenizer(text, add_special_tokens=True, padding="max_length", truncation=True)
+            data.append(outputs["input_ids"])
         return data
 
     def preprocessing(self, data):
@@ -74,8 +74,8 @@ class Dataloader(pl.LightningDataModule):
 
         return inputs, targets
 
-    def setup(self, stage='fit'):
-        if stage == 'fit':
+    def setup(self, stage="fit"):
+        if stage == "fit":
             # 학습 데이터와 검증 데이터셋을 호출합니다
             train_data = pd.read_csv(self.train_path)
             val_data = pd.read_csv(self.dev_path)
@@ -127,7 +127,7 @@ class Model(pl.LightningModule):
         self.loss_func = torch.nn.L1Loss()
 
     def forward(self, x):
-        x = self.plm(x)['logits']
+        x = self.plm(x)["logits"]
 
         return x
 
@@ -135,7 +135,7 @@ class Model(pl.LightningModule):
         x, y = batch
         logits = self(x)
         loss = self.loss_func(logits, y.float())
-        self.log('train_loss', loss)
+        self.log("train_loss", loss)
 
         return loss
 
@@ -143,9 +143,9 @@ class Model(pl.LightningModule):
         x, y = batch
         logits = self(x)
         loss = self.loss_func(logits, y.float())
-        self.log('val_loss', loss)
+        self.log("val_loss", loss)
 
-        self.log('val_pearson', torchmetrics.functional.pearson_corrcoef(logits.squeeze(), y.squeeze()))
+        self.log("val_pearson", torchmetrics.functional.pearson_corrcoef(logits.squeeze(), y.squeeze()))
 
         return loss
 
@@ -153,7 +153,7 @@ class Model(pl.LightningModule):
         x, y = batch
         logits = self(x)
 
-        self.log('test_pearson', torchmetrics.functional.pearson_corrcoef(logits.squeeze(), y.squeeze()))
+        self.log("test_pearson", torchmetrics.functional.pearson_corrcoef(logits.squeeze(), y.squeeze()))
 
     def predict_step(self, batch, batch_idx):
         x = batch
@@ -166,21 +166,21 @@ class Model(pl.LightningModule):
         return optimizer
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # 하이퍼 파라미터 등 각종 설정값을 입력받습니다
     # 터미널 실행 예시 : python3 run.py --batch_size=64 ...
     # 실행 시 '--batch_size=64' 같은 인자를 입력하지 않으면 default 값이 기본으로 실행됩니다
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_name', default='klue/roberta-small', type=str)
-    parser.add_argument('--batch_size', default=16, type=int)
-    parser.add_argument('--max_epoch', default=1, type=int)
-    parser.add_argument('--shuffle', default=True)
-    parser.add_argument('--learning_rate', default=1e-5, type=float)
-    parser.add_argument('--train_path', default='../data/augmented_train.csv')
-    parser.add_argument('--dev_path', default='../data/dev.csv')
-    parser.add_argument('--test_path', default='../data/dev.csv')
-    parser.add_argument('--predict_path', default='../data/test.csv')
-    parser.add_argument('--num_workers', default=1, type=int)
+    parser.add_argument("--model_name", default="klue/roberta-small", type=str)
+    parser.add_argument("--batch_size", default=16, type=int)
+    parser.add_argument("--max_epoch", default=1, type=int)
+    parser.add_argument("--shuffle", default=True)
+    parser.add_argument("--learning_rate", default=1e-5, type=float)
+    parser.add_argument("--train_path", default="../data/augmented_train.csv")
+    parser.add_argument("--dev_path", default="../data/dev.csv")
+    parser.add_argument("--test_path", default="../data/dev.csv")
+    parser.add_argument("--predict_path", default="../data/test.csv")
+    parser.add_argument("--num_workers", default=1, type=int)
     args = parser.parse_args()
 
     # dataloader와 model을 생성합니다.
@@ -188,17 +188,17 @@ if __name__ == '__main__':
                             args.test_path, args.predict_path, args.num_workers)
 
     # gpu가 없으면 'gpus=0'을, gpu가 여러개면 'gpus=4'처럼 사용하실 gpu의 개수를 입력해주세요
-    trainer = pl.Trainer(accelerator='gpu', devices=1, max_epochs=args.max_epoch, log_every_n_steps=1)
+    trainer = pl.Trainer(accelerator="gpu", devices=1, max_epochs=args.max_epoch, log_every_n_steps=1)
 
     # Inference part
     # 저장된 모델로 예측을 진행합니다.
-    model = torch.load('model.pt')
+    model = torch.load("model.pt")
     predictions = trainer.predict(model=model, datamodule=dataloader)
 
     # 예측된 결과를 형식에 맞게 반올림하여 준비합니다.
     predictions = list(round(float(i), 1) for i in torch.cat(predictions))
 
     # output 형식을 불러와서 예측된 결과로 바꿔주고, output.csv로 출력합니다.
-    output = pd.read_csv('../data/sample_submission.csv')
-    output['target'] = predictions
-    output.to_csv('output.csv', index=False)
+    output = pd.read_csv("../data/sample_submission.csv")
+    output["target"] = predictions
+    output.to_csv("output.csv", index=False)
